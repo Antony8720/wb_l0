@@ -4,16 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"time"
-	"wb_l0/internal/models"
+	"wb_l0/internal/app/models"
 
 	"github.com/google/uuid"
 	"github.com/nats-io/stan.go"
 )
 
-func orderGenerator() *models.Order {
+func orderGenerator() *models.DataJSON {
 	id := uuid.New()
 
-	order := models.Order{
+	order := models.DataJSON{
 		OrderUID:    id.String(),
 		TrackNumber: "WBL0",
 		Entry:       "WBIL",

@@ -2,9 +2,9 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	"sync"
 
-	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -13,11 +13,6 @@ type Store struct {
 	db *sql.DB
 	mutex sync.RWMutex
 	cache *Cache
-}
-
-type DatabaseJSON struct {
-	userID int
-	json string
 }
 
 func New(config *Config) *Store {
@@ -46,20 +41,21 @@ func(s *Store) Close() {
 }
 
 func(s *Store) GetOrdersAll() error{
-	rows, err := s.db.Query()
+	rows, err := s.db.Query("SELECT * FROM orders")
 	defer rows.Close()
 	if err != nil {
 		return err
 	}
 	
 	for rows.Next() {
-		var dbjs DatabaseJSON
-		err = rows.Scan(&dbjs.userID, &dbjs.json)
+		var id string
+		var data []byte
+		err = rows.Scan(&id, &data)
 		if err != nil {
 			return err
 		}
 
-		s.cache.Set(dbjs.userID, dbjs.json)
+		s.cache.Set(id, data)
 	}
 
 	err = rows.Err()
@@ -70,6 +66,23 @@ func(s *Store) GetOrdersAll() error{
 	return nil
 }
 
-func(s *Store) GetOrderByID(int) (string, error) {
+func(s *Store) GetOrderByID(id string) ([]byte, bool) {
+	res, ok := s.cache.Get(id)
+	if !ok {
+		return nil, false
+	}
+	return res, true
+}
 
+func(s *Store) AddOrder(id string, order []byte) error {
+	if _, ok := s.cache.data[id]; ok {
+		return fmt.Errorf("Error: This ID is already use")
+	} else {
+		s.cache.data[id] = order
+	} 
+
+	query := "INSERT INTO orders (uid, data) VALUES ($1, $2)"
+	s.db.Exec(query, id, order)
+
+	return nil
 }

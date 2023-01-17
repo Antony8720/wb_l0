@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"wb_l0/internal/app/store"
@@ -38,7 +39,7 @@ func (s *APIServer) configureRouter() {
 	s.router.Use(middleware.Logger)
 
 	s.router.Route("/", func(r chi.Router) {
-		r.Get("/get/{id}", GetOrderByID())
+		r.Get("/get/{id}", s.GetOrderByID())
 	})
 }
 
@@ -51,4 +52,23 @@ func (s *APIServer) configureStore() error{
 	s.store = st
 	
 	return nil
+}
+
+func (s *APIServer) GetOrderByID() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "id")
+		order, ok := s.store.GetOrderByID(id)
+		if !ok {
+			http.Error(w, "404 page not found", http.StatusNotFound)
+			return
+		}
+		respBody, err := json.Marshal(order)
+		if err != nil {
+			http.Error(w, "500 internal server error", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("content-type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respBody)
+	}
 }
