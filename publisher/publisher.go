@@ -1,4 +1,4 @@
-package publisher
+package main
 
 import (
 	"encoding/json"
@@ -10,10 +10,10 @@ import (
 	"github.com/nats-io/stan.go"
 )
 
-func orderGenerator() *models.DataJSON {
+func orderGenerator() *models.Order {
 	id := uuid.New()
 
-	order := models.DataJSON{
+	order := models.Order{
 		OrderUID:    id.String(),
 		TrackNumber: "WBL0",
 		Entry:       "WBIL",
@@ -68,7 +68,7 @@ func orderGenerator() *models.DataJSON {
 
 
 func Publish() {
-	sc, err := stan.Connect("wb_l0", "publisher")
+	sc, err := stan.Connect("test-cluster", "publisher")
 	defer sc.Close()
 	if err != nil {
 		log.Printf("[Error]: publisher can't connect to Nats: %v\n", err)
@@ -81,10 +81,18 @@ func Publish() {
 		log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
 		return
 	}
-
-	err = sc.Publish("order", orderJs)
-	if err != nil {
-		log.Printf("[Error]: publisher can't publish: %v\n", err)
-		return
+	for {
+		err = sc.Publish("order", orderJs)
+		if err != nil {
+			log.Printf("[Error]: publisher can't publish: %v\n", err)
+			return
+		}
+		log.Println("message send")
+		time.Sleep(10 * time.Second)
 	}
+}
+
+
+func main () {
+	Publish()
 }

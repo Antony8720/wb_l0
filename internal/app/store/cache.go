@@ -1,6 +1,7 @@
 package store
 
 import (
+	"log"
 	"sync"
 )
 
@@ -25,5 +26,8 @@ func (cache *Cache) Get(id string) ([]byte, bool) {
 func (cache *Cache) Set(id string, value []byte) {
 	cache.Lock()
 	defer cache.Unlock()
+	log.Printf("cache: %v", cache.data[id])
 	cache.data[id] = value
+	log.Printf("id: %v", id)
+	log.Printf("cache: %v", cache.data[id])
 }

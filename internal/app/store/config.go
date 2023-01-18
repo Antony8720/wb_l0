@@ -15,8 +15,7 @@ func NewConfig() *Config{
 	flag.StringVar(&cfg.DatabaseURL, "b", "", "Database URL")
 	flag.Parse()
 	cfg.chooseDBURL()
-	return &Config{
-	}
+	return &cfg
 }
 
 func (config *Config) chooseDBURL() {

@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"sync"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -12,12 +13,13 @@ type Store struct {
 	config *Config
 	db *sql.DB
 	mutex sync.RWMutex
-	cache *Cache
+	Cache *Cache
 }
 
 func New(config *Config) *Store {
 	return &Store{
 		config: config,
+		Cache: NewCache(),
 	}
 }
 
@@ -41,6 +43,7 @@ func(s *Store) Close() {
 }
 
 func(s *Store) GetOrdersAll() error{
+	log.Println("get orders all start")
 	rows, err := s.db.Query("SELECT * FROM orders")
 	defer rows.Close()
 	if err != nil {
@@ -48,14 +51,16 @@ func(s *Store) GetOrdersAll() error{
 	}
 	
 	for rows.Next() {
+		log.Println("rows next start")
 		var id string
 		var data []byte
 		err = rows.Scan(&id, &data)
 		if err != nil {
+			log.Println("rows scan error")
 			return err
 		}
 
-		s.cache.Set(id, data)
+		s.Cache.Set(id, data)
 	}
 
 	err = rows.Err()
@@ -67,22 +72,27 @@ func(s *Store) GetOrdersAll() error{
 }
 
 func(s *Store) GetOrderByID(id string) ([]byte, bool) {
-	res, ok := s.cache.Get(id)
+	res, ok := s.Cache.Get(id)
 	if !ok {
+		log.Println("get !ok")
 		return nil, false
 	}
 	return res, true
 }
 
 func(s *Store) AddOrder(id string, order []byte) error {
-	if _, ok := s.cache.data[id]; ok {
+	if _, ok := s.Cache.data[id]; ok {
 		return fmt.Errorf("Error: This ID is already use")
 	} else {
-		s.cache.data[id] = order
+		s.Cache.data[id] = order
 	} 
-
+	fmt.Println("подготовка запроса")
 	query := "INSERT INTO orders (uid, data) VALUES ($1, $2)"
-	s.db.Exec(query, id, order)
+	_, err := s.db.Exec(query, id, order)
+	if err != nil {
+		return fmt.Errorf("Error: Inserting error: %v", err)
+	}
+	fmt.Println("запрос отправлен")
 
 	return nil
 }
