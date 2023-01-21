@@ -3,18 +3,19 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 	"time"
 	"wb_l0/internal/app/models"
 
-	"github.com/google/uuid"
 	"github.com/nats-io/stan.go"
 )
 
 func orderGenerator() *models.Order {
-	id := uuid.New()
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789")
+	id := randString(19, letters)
 
 	order := models.Order{
-		OrderUID:    id.String(),
+		OrderUID:    id,
 		TrackNumber: "WBL0",
 		Entry:       "WBIL",
 		Delivery: models.Delivery{
@@ -74,14 +75,14 @@ func Publish() {
 		log.Printf("[Error]: publisher can't connect to Nats: %v\n", err)
 		return
 	}
-	
-	order := orderGenerator()
-	orderJs, err := json.Marshal(order)
-	if err != nil {
-		log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
-		return
-	}
 	for {
+		order := orderGenerator()
+		orderJs, err := json.Marshal(order)
+		if err != nil {
+			log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
+			return
+		}
+	
 		err = sc.Publish("order", orderJs)
 		if err != nil {
 			log.Printf("[Error]: publisher can't publish: %v\n", err)
@@ -95,4 +96,12 @@ func Publish() {
 
 func main () {
 	Publish()
+}
+
+func randString(n int, letters []rune) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

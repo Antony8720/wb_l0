@@ -1,10 +1,11 @@
 package apiserver
 
 import (
+	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"wb_l0/internal/app/store"
-	
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -44,7 +45,8 @@ func (s *APIServer) configureRouter() {
 	s.router.Use(middleware.Recoverer)
 
 	s.router.Route("/", func(r chi.Router) {
-		r.Get("/get/{id}", s.GetOrderByID())
+		r.Get("/", s.MainPage())
+		r.Get("/get", s.GetOrderByID())
 	})
 }
 
@@ -64,18 +66,59 @@ func (s *APIServer) configureStore() error{
 	return nil
 }
 
+type Page struct {
+	UID string
+	Data string
+}
+
 func (s *APIServer) GetOrderByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := chi.URLParam(r, "id")
-		order, ok := s.Store.GetOrderByID(id)
-		if !ok {
-			log.Println("get order by id !ok")
-			http.Error(w, "404 page not found", http.StatusNotFound)
+		tmplt, err := template.ParseFiles("../web/html/index.html")
+		if err != nil {
+			log.Printf("[Error]:template parsing error: %v", err)
+			http.Error(w, "500 internal server error", http.StatusInternalServerError)
 			return
 		}
+		id := r.FormValue("id")
+		fmt.Println(id)
+		order, ok := s.Store.GetOrderByID(id)
 		
-		w.Header().Set("content-type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(order)
+		event := Page{
+			UID:  "ID: " + id,
+			Data: string(order),
+		}
+
+		if !ok {
+			log.Println("get order by id !ok")
+			event = Page{
+				Data: "id \"" + id + "\" not found",
+			}
+		}
+
+		err = tmplt.Execute(w, event)
+		if err != nil {
+			log.Printf("[Error]:template execution error: %v", err)
+			http.Error(w, "500 internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+
+func (s *APIServer) MainPage() http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
+		tmplt, err := template.ParseFiles("../web/html/index.html")
+		if err != nil {
+			log.Printf("[Error]:template parsing error: %v", err)
+			http.Error(w, "500 internal server error", http.StatusInternalServerError)
+			return
+		}
+		event := Page{}
+		err = tmplt.Execute(w, event)
+		if err != nil {
+			log.Printf("[Error]:template execution error: %v", err)
+			http.Error(w, "500 internal server error", http.StatusInternalServerError)
+			return
+		}
 	}
 }

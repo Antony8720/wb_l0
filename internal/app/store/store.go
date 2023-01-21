@@ -43,15 +43,15 @@ func(s *Store) Close() {
 }
 
 func(s *Store) GetOrdersAll() error{
-	log.Println("get orders all start")
 	rows, err := s.db.Query("SELECT * FROM orders")
+
 	defer rows.Close()
 	if err != nil {
+		log.Println("rows error")
 		return err
 	}
 	
 	for rows.Next() {
-		log.Println("rows next start")
 		var id string
 		var data []byte
 		err = rows.Scan(&id, &data)
@@ -86,13 +86,11 @@ func(s *Store) AddOrder(id string, order []byte) error {
 	} else {
 		s.Cache.data[id] = order
 	} 
-	fmt.Println("подготовка запроса")
 	query := "INSERT INTO orders (uid, data) VALUES ($1, $2)"
 	_, err := s.db.Exec(query, id, order)
 	if err != nil {
 		return fmt.Errorf("Error: Inserting error: %v", err)
 	}
-	fmt.Println("запрос отправлен")
 
 	return nil
 }

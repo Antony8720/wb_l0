@@ -2,7 +2,8 @@ package apiserver
 
 import (
 	"encoding/json"
-	"fmt"
+	"reflect"
+	"strings"
 	"log"
 	"sync"
 	"wb_l0/internal/app/models"
@@ -24,7 +25,6 @@ func NewSubscriber(server *APIServer) *Subscriber{
 }
 
 func(s *Subscriber) Subscribe () {
-	fmt.Println("connect to Nats")
 	sc, err := stan.Connect("test-cluster", "subscriber")
 	defer sc.Close()
 	if err != nil {
@@ -33,13 +33,17 @@ func(s *Subscriber) Subscribe () {
 
 	sc.Subscribe("order", func(msg *stan.Msg) {
 		newOrder := models.Order{}
+		ok := ValidateMessage(msg.Data)
+		if  !ok  {
+			return
+		}
 		err := json.Unmarshal(msg.Data, &newOrder)
 		if err != nil {
 			log.Println("[Error]: Can't unmarshal message")
 			return
 		}
 
-		_, ok := s.cache.Get(newOrder.OrderUID)
+		_, ok = s.cache.Get(newOrder.OrderUID)
 		if 	ok {
 			log.Println("This message already in cache")
 			return
@@ -56,4 +60,30 @@ func(s *Subscriber) Subscribe () {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	wg.Wait()
+}
+
+func ValidateMessage(m []byte) bool {
+
+	var jsonData models.Order
+
+	if err := json.Unmarshal(m, &jsonData); err != nil {
+		return false
+	}
+
+	allFields := reflect.ValueOf(&jsonData).Elem()
+
+	if allFields.NumField() != 14 {
+		log.Printf("num field = %v",allFields.NumField())
+		log.Println("validation failed")
+		return false
+	}
+
+	for i := 0; i < allFields.NumField(); i++ {
+		if allFields.Field(i).IsZero() && strings.Contains(allFields.Type().Field(i).Tag.Get("validate"), "required") || len(jsonData.OrderUID) != 19 {
+			log.Println("validation failed")
+			return false
+		}
+	}
+
+	return true
 }

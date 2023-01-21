@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Получение информации о заказе по id</title>
+</head>
+<body>
+    <h1>Получение информации о заказе по id</h1>
+        <form action="/get" method="get">
+            id:<input type="text" name="id">
+            <input type="submit" value="get order">
+        </form>
+    <h3> {{ .UID }} </h3>
+    <p> {{ .Data }} </p>
+</body>
+</html>
