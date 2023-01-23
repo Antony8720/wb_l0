@@ -10,7 +10,7 @@ type Config struct {
 	DatabaseURL string
 }
 
-func NewConfig() *Config{
+func NewConfig() *Config {
 	cfg := Config{}
 	flag.StringVar(&cfg.DatabaseURL, "b", "", "Database URL")
 	flag.Parse()

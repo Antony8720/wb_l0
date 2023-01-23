@@ -2,9 +2,9 @@ package apiserver
 
 import (
 	"encoding/json"
+	"log"
 	"reflect"
 	"strings"
-	"log"
 	"sync"
 	"wb_l0/internal/app/models"
 	"wb_l0/internal/app/store"
@@ -17,14 +17,14 @@ type Subscriber struct {
 	cache *store.Cache
 }
 
-func NewSubscriber(server *APIServer) *Subscriber{
+func NewSubscriber(server *APIServer) *Subscriber {
 	return &Subscriber{
 		store: server.Store,
 		cache: server.Store.Cache,
 	}
 }
 
-func(s *Subscriber) Subscribe () {
+func (s *Subscriber) Subscribe() {
 	sc, err := stan.Connect("test-cluster", "subscriber")
 	defer sc.Close()
 	if err != nil {
@@ -35,7 +35,7 @@ func(s *Subscriber) Subscribe () {
 		log.Println("message received")
 		newOrder := models.Order{}
 		ok := ValidateMessage(msg.Data)
-		if  !ok  {
+		if !ok {
 			return
 		}
 		err := json.Unmarshal(msg.Data, &newOrder)
@@ -45,7 +45,7 @@ func(s *Subscriber) Subscribe () {
 		}
 
 		_, ok = s.cache.Get(newOrder.OrderUID)
-		if 	ok {
+		if ok {
 			log.Println("This message already in cache")
 			return
 		}
@@ -74,7 +74,7 @@ func ValidateMessage(m []byte) bool {
 	allFields := reflect.ValueOf(&jsonData).Elem()
 
 	if allFields.NumField() != 14 {
-		log.Printf("num field = %v",allFields.NumField())
+		log.Printf("num field = %v", allFields.NumField())
 		log.Println("[Error]: validation failed")
 		return false
 	}

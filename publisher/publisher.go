@@ -109,7 +109,6 @@ func invalidOrderGenerator() *models.Order {
 	return &order
 }
 
-
 func Publish() {
 	sc, err := stan.Connect("test-cluster", "publisher")
 	defer sc.Close()
@@ -118,14 +117,14 @@ func Publish() {
 		return
 	}
 	for {
-		for i := 0; i < 5; i++{
+		for i := 0; i < 5; i++ {
 			order := orderGenerator()
 			orderJs, err := json.Marshal(order)
 			if err != nil {
 				log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
 				return
 			}
-	
+
 			err = sc.Publish("order", orderJs)
 			if err != nil {
 				log.Printf("[Error]: publisher can't publish: %v\n", err)
@@ -133,15 +132,15 @@ func Publish() {
 			}
 			log.Println("message send")
 			time.Sleep(5 * time.Second)
-			}
-		
+		}
+
 		inOrder := invalidOrderGenerator()
 		inOrderJs, err := json.Marshal(inOrder)
 		if err != nil {
 			log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
 			return
 		}
-	
+
 		err = sc.Publish("order", inOrderJs)
 		if err != nil {
 			log.Printf("[Error]: publisher can't publish: %v\n", err)
@@ -152,8 +151,7 @@ func Publish() {
 	}
 }
 
-
-func main () {
+func main() {
 	Publish()
 }
 

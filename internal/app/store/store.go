@@ -11,19 +11,19 @@ import (
 
 type Store struct {
 	config *Config
-	db *sql.DB
-	mutex sync.RWMutex
-	Cache *Cache
+	db     *sql.DB
+	mutex  sync.RWMutex
+	Cache  *Cache
 }
 
 func New(config *Config) *Store {
 	return &Store{
 		config: config,
-		Cache: NewCache(),
+		Cache:  NewCache(),
 	}
 }
 
-func(s *Store) Open() error{
+func (s *Store) Open() error {
 	db, err := sql.Open("pgx", s.config.DatabaseURL)
 	if err != nil {
 		return err
@@ -32,17 +32,17 @@ func(s *Store) Open() error{
 	if err := db.Ping(); err != nil {
 		return err
 	}
-	
+
 	s.db = db
 
 	return nil
 }
 
-func(s *Store) Close() {
+func (s *Store) Close() {
 	s.db.Close()
 }
 
-func(s *Store) GetOrdersAll() error{
+func (s *Store) GetOrdersAll() error {
 	rows, err := s.db.Query("SELECT * FROM orders")
 
 	defer rows.Close()
@@ -50,7 +50,7 @@ func(s *Store) GetOrdersAll() error{
 		log.Println("rows error")
 		return err
 	}
-	
+
 	for rows.Next() {
 		var id string
 		var data []byte
@@ -67,11 +67,11 @@ func(s *Store) GetOrdersAll() error{
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
-func(s *Store) GetOrderByID(id string) ([]byte, bool) {
+func (s *Store) GetOrderByID(id string) ([]byte, bool) {
 	res, ok := s.Cache.Get(id)
 	if !ok {
 		log.Println("get !ok")
@@ -80,12 +80,12 @@ func(s *Store) GetOrderByID(id string) ([]byte, bool) {
 	return res, true
 }
 
-func(s *Store) AddOrder(id string, order []byte) error {
+func (s *Store) AddOrder(id string, order []byte) error {
 	if _, ok := s.Cache.data[id]; ok {
 		return fmt.Errorf("Error: This ID is already use")
 	} else {
 		s.Cache.data[id] = order
-	} 
+	}
 	query := "INSERT INTO orders (uid, data) VALUES ($1, $2)"
 	_, err := s.db.Exec(query, id, order)
 	if err != nil {

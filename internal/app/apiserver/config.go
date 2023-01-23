@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	BindAddress string
-	Store *store.Config
+	Store       *store.Config
 }
 
 func NewConfig() *Config {

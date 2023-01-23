@@ -14,7 +14,7 @@ import (
 type APIServer struct {
 	config *Config
 	router *chi.Mux
-	Store *store.Store
+	Store  *store.Store
 }
 
 func New(config *Config) *APIServer {
@@ -27,7 +27,7 @@ func New(config *Config) *APIServer {
 func (s *APIServer) Start() error {
 	s.configureRouter()
 
-	if err := s.configureStore(); err != nil{
+	if err := s.configureStore(); err != nil {
 		log.Printf("[Error]: configure store error: %v", err)
 		return err
 	}
@@ -36,7 +36,7 @@ func (s *APIServer) Start() error {
 	go sub.Subscribe()
 
 	log.Println("[Info]: starting api server")
-	
+
 	return http.ListenAndServe(s.config.BindAddress, s.router)
 }
 
@@ -50,24 +50,24 @@ func (s *APIServer) configureRouter() {
 	})
 }
 
-func (s *APIServer) configureStore() error{
+func (s *APIServer) configureStore() error {
 	st := store.New(s.config.Store)
 	if err := st.Open(); err != nil {
 		return err
 	}
-	
+
 	s.Store = st
 
 	err := s.Store.GetOrdersAll()
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
 type Page struct {
-	UID string
+	UID  string
 	Data string
 }
 
@@ -82,7 +82,7 @@ func (s *APIServer) GetOrderByID() http.HandlerFunc {
 		id := r.FormValue("id")
 		fmt.Println(id)
 		order, ok := s.Store.GetOrderByID(id)
-		
+
 		event := Page{
 			UID:  "ID: " + id,
 			Data: string(order),
@@ -104,8 +104,7 @@ func (s *APIServer) GetOrderByID() http.HandlerFunc {
 	}
 }
 
-
-func (s *APIServer) MainPage() http.HandlerFunc{
+func (s *APIServer) MainPage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tmplt, err := template.ParseFiles("../web/html/index.html")
 		if err != nil {
