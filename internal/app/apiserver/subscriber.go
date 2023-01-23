@@ -32,6 +32,7 @@ func(s *Subscriber) Subscribe () {
 	}
 
 	sc.Subscribe("order", func(msg *stan.Msg) {
+		log.Println("message received")
 		newOrder := models.Order{}
 		ok := ValidateMessage(msg.Data)
 		if  !ok  {
@@ -74,13 +75,13 @@ func ValidateMessage(m []byte) bool {
 
 	if allFields.NumField() != 14 {
 		log.Printf("num field = %v",allFields.NumField())
-		log.Println("validation failed")
+		log.Println("[Error]: validation failed")
 		return false
 	}
 
 	for i := 0; i < allFields.NumField(); i++ {
 		if allFields.Field(i).IsZero() && strings.Contains(allFields.Type().Field(i).Tag.Get("validate"), "required") || len(jsonData.OrderUID) != 19 {
-			log.Println("validation failed")
+			log.Println("[Error]: validation failed")
 			return false
 		}
 	}

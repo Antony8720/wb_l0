@@ -11,7 +11,7 @@ import (
 )
 
 func orderGenerator() *models.Order {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789")
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	id := randString(19, letters)
 
 	order := models.Order{
@@ -67,6 +67,48 @@ func orderGenerator() *models.Order {
 	return &order
 }
 
+func invalidOrderGenerator() *models.Order {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	id := randString(18, letters)
+
+	order := models.Order{
+		OrderUID:    id,
+		TrackNumber: "WBL0",
+		Entry:       "WBIL",
+		Delivery: models.Delivery{
+			Name:    "Test Testov",
+			Phone:   "+79998688999",
+			Zip:     "263809",
+			City:    "Moscow",
+			Address: "Red Square 1",
+			Region:  "Moscow",
+			Email:   "test@yandex.ru",
+		},
+		Payment: models.Payment{
+			Transaction:  "frhgtr",
+			RequestID:    "fgb",
+			Currency:     "USD",
+			Provider:     "wbpay",
+			Amount:       9812,
+			PaymentDt:    123455434,
+			Bank:         "alpha",
+			DeliveryCost: 1400,
+			GoodsTotal:   343,
+			CustomFee:    0,
+		},
+		Locale:            "ru",
+		InternalSignature: "fsdg",
+		CustomerID:        "test",
+		DeliveryService:   "serr",
+		Shardkey:          "9",
+		SmID:              99,
+		DateCreated:       time.Now(),
+		OofShard:          "1",
+	}
+
+	return &order
+}
+
 
 func Publish() {
 	sc, err := stan.Connect("test-cluster", "publisher")
@@ -76,14 +118,31 @@ func Publish() {
 		return
 	}
 	for {
-		order := orderGenerator()
-		orderJs, err := json.Marshal(order)
+		for i := 0; i < 5; i++{
+			order := orderGenerator()
+			orderJs, err := json.Marshal(order)
+			if err != nil {
+				log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
+				return
+			}
+	
+			err = sc.Publish("order", orderJs)
+			if err != nil {
+				log.Printf("[Error]: publisher can't publish: %v\n", err)
+				return
+			}
+			log.Println("message send")
+			time.Sleep(5 * time.Second)
+			}
+		
+		inOrder := invalidOrderGenerator()
+		inOrderJs, err := json.Marshal(inOrder)
 		if err != nil {
 			log.Printf("[Error]: publisher can't marshal to JSON: %v\n", err)
 			return
 		}
 	
-		err = sc.Publish("order", orderJs)
+		err = sc.Publish("order", inOrderJs)
 		if err != nil {
 			log.Printf("[Error]: publisher can't publish: %v\n", err)
 			return
